@@ -1,0 +1,3 @@
+graphify .                         # tạo graph lần đầu
+graphify claude install --project  # tích hợp vào Claude Code
+graphify update .                  # cập nhật graph khi code thay đổi

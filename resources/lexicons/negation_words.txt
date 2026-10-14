@@ -1,0 +1,15 @@
+# Từ phủ định tiếng Việt (dạng sau khi tách từ, nối bằng '_').
+# Dùng cho bước gắn phủ định: "không tốt" -> "không_tốt" để mô hình túi-từ phân biệt được
+# "tốt" và "không tốt".
+không
+chẳng
+chả
+chưa
+đừng
+chớ
+không_hề
+chẳng_hề
+chưa_hề
+chả_hề
+đâu_có
+chẳng_có

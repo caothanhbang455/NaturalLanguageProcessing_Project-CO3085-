@@ -1,0 +1,37 @@
+# Python >= 3.10 (đã chạy với Python 3.10 và 3.12).
+# Cài đặt: pip install -r requirements.txt && pip install -e .
+
+# Số học và dữ liệu
+numpy>=2.0,<3
+pandas>=2.2,<3
+scipy>=1.11
+scikit-learn>=1.5
+joblib>=1.3
+pyarrow>=14
+
+# Tách từ và xử lý tiếng Việt
+underthesea>=6.8
+pyvi>=0.1.1
+
+# Biểu diễn văn bản
+gensim>=4.3                    # Word2Vec, FastText, Doc2Vec
+sentence-transformers>=3.0     # SBERT, multilingual-E5, BGE-M3, Qwen3-Embedding
+transformers>=4.51             # PhoBERT, ViSoBERT, XLM-R (Qwen3 cần >= 4.51)
+torch>=2.2
+
+# Trực quan hóa
+matplotlib>=3.8
+seaborn>=0.13
+wordcloud>=1.9
+
+# Notebook, kiểm thử, demo
+jupyter
+ipykernel
+nbformat
+tqdm
+pytest>=7
+streamlit>=1.30
+
+# Tùy chọn (mô hình boosting). Thiếu thì registry tự bỏ qua.
+# lightgbm>=4.0
+# xgboost>=2.0

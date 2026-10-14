@@ -1,0 +1,356 @@
+# Từ điển teencode / viết tắt -> dạng chuẩn (TSV: khóa<TAB>giá trị, chữ thường).
+# Nguồn: refs/textpreprocessing/data/files/teencode.txt đã lọc bỏ các mục sai/mơ hồ
+# trong domain điện thoại (vd 'note', 'face', 'c', 'a'), các mục tục tĩu và các mục đã
+# được xử lý bằng luật regex tổng quát (tiếng cười/khóc, thiếu 'n' trước 'g'),
+# cộng thêm phần bổ sung cho văn phong review điện thoại. Mục xuất hiện trước được ưu tiên.
+
+# --- Phủ định (rất quan trọng cho cảm xúc) ---
+k	không
+ko	không
+kg	không
+khg	không
+kh	không
+hok	không
+hk	không
+hem	không
+hông	không
+khum	không
+khôg	không
+k0	không
+kô	không
+# --- Từ chức năng hay viết tắt ---
+dc	được
+đc	được
+đươc	được
+duoc	được
+j	gì
+ji	gì
+r	rồi
+rùi	rồi
+ròi	rồi
+oy	rồi
+òy	rồi
+z	vậy
+zậy	vậy
+dzậy	vậy
+vs	với
+cx	cũng
+cg	cũng
+cũg	cũng
+nma	nhưng mà
+nhma	nhưng mà
+nhg	nhưng
+nhưg	nhưng
+lun	luôn
+thui	thôi
+thuj	thôi
+hoy	thôi
+bik	biết
+bít	biết
+pít	biết
+wá	quá
+qá	quá
+wa	quá
+nhìu	nhiều
+nhiu	nhiều
+trc	trước
+ntn	như thế nào
+bth	bình thường
+bthg	bình thường
+bthường	bình thường
+mn	mọi người
+mng	mọi người
+mk	mình
+mik	mình
+mjk	mình
+mh	mình
+mìk	mình
+ae	anh em
+ace	anh chị em
+ng	người
+ngta	người ta
+# --- Thuật ngữ điện thoại / mua bán ---
+dt	điện thoại
+đt	điện thoại
+dth	điện thoại
+đth	điện thoại
+dthoai	điện thoại
+đthoai	điện thoại
+dthoại	điện thoại
+đthoại	điện thoại
+dienthoai	điện thoại
+sp	sản phẩm
+nv	nhân viên
+nvien	nhân viên
+tgdd	thế giới di động
+tgdđ	thế giới di động
+thegioididong	thế giới di động
+dmx	điện máy xanh
+đmx	điện máy xanh
+ss	samsung
+ip	iphone
+bin	pin
+pín	pin
+sài	xài
+wf	wifi
+wifj	wifi
+hđh	hệ điều hành
+pk	phụ kiện
+bhanh	bảo hành
+bhành	bảo hành
+cảm ứg	cảm ứng
+ok	ok
+oke	ok
+okie	ok
+oki	ok
+okela	ok
+okay	ok
+oce	ok
+okê	ok
+ôkê	ok
+# --- Từ tiếng Anh mang cảm xúc thường gặp ---
+good	tốt
+nice	tốt
+great	tuyệt vời
+perfect	hoàn hảo
+bad	tệ
+smooth	mượt
+beautiful	đẹp
+fast	nhanh
+slow	chậm
+like	thích
+love	thích
+vl	vãi
+vkl	vãi
+vcl	vãi
+# --- Kế thừa từ refs (đã lọc) ---
+bme	bố mẹ
+cta	chúng ta
+mih	mình
+nhữg	những
+qtam	quan tâm
+thươg	thương
+qtâm	quan tâm
+chug	chung
+trườg	trường
+thoy	thôi
+đki	đăng ký
+atsm	ảo tưởng sức mạnh
+ạk	ạ
+cùg	cùng
+pn	bạn
+pjt	biết
+thjk	thích
+ktra	kiểm tra
+nek	nè
+nthe	như thế
+chúg	chúng
+kái	cái
+tìh	tình
+phòg	phòng
+lòg	lòng
+từg	từng
+rằg	rằng
+sốg	sống
+thuơng	thương
+càg	càng
+đky	đăng ký
+bằg	bằng
+sviên	sinh viên
+ák	á
+đág	đáng
+nvay	như vậy
+nhjeu	nhiều
+xg	xuống
+zồi	rồi
+trag	trang
+zữ	dữ
+kte	kinh tế
+độg	động
+gắg	gắng
+thgian	thời gian
+đồg	đồng
+nthê	như thế
+vọg	vọng
+đôg	đông
+răg	răng
+thườg	thường
+tcảm	tình cảm
+đứg	đứng
+ksao	không sao
+cmày	chúng mày
+xuốg	xuống
+nkư	như
+lquan	liên quan
+tiếg	tiếng
+xih	xinh
+hìh	hình
+thàh	thành
+ngke	nghe
+tnào	thế nào
+tưởg	tưởng
+ctrinh	chương trình
+phog	phong
+zìa	gì
+kũg	cũng
+ntnao	như thế nào
+trọg	trọng
+nthế	như thế
+năg	năng
+ngđó	người đó
+lquen	làm quen
+riêg	riêng
+ngag	ngang
+bnhiu	bao nhiêu
+ngốk	ngốc
+kậu	cậu
+kqua	kết quả
+htrc	hôm trước
+địh	định
+gđình	gia đinh
+giốg	giống
+csống	cuộc sống
+zùi	rồi
+bnhiêu	bao nhiêu
+cbị	chuẩn bị
+kòn	còn
+buôg	buông
+csong	cuộc sống
+chàg	chàng
+chăg	chăng
+ngàh	ngành
+llac	liên lạc
+nkưng	nhưng
+nắg	nắng
+tíh	tính
+khoảg	khoảng
+thík	thích
+ngđo	người đó
+ngkhác	người khác
+thẳg	thẳng
+kảm	cảm
+dàh	dành
+júp	giúp
+lặg	lặng
+vđê	vấn đề
+bbè	bạn bè
+bóg	bóng
+dky	đăng ký
+dòg	dòng
+uốg	uống
+cviec	công việc
+tượg	tượng
+qà	quà
+thjc	thích
+nhưq	nhưng
+cđời	cuộc đời
+đáh	đánh
+xloi	xin lỗi
+zám	dám
+qtrọng	quan trọng
+bìh	bình
+kủa	của
+đóg	đóng
+nvậy	như vậy
+qả	quả
+đkiện	điều kiện
+nèk	nè
+tlai	tương lai
+bsĩ	bác sĩ
+hkì	học kỳ
+vde	vấn đề
+chta	chúng ta
+ltinh	linh tinh
+snghĩ	suy nghĩ
+nặg	nặng
+họk	học
+dừg	dừng
+hphúc	hạnh phúc
+wtâm	quan tâm
+thíck	thích
+chuện	chuyện
+lạh	lạnh
+ntnày	như thế này
+lúk	lúc
+mớj	mới
+hsơ	hồ sơ
+kih	kinh
+dthương	dễ thương
+ctrình	chương trình
+mìnk	mình
+mjh	mình
+uhm	ừm
+thỳ	thì
+tks	thanks
+nàg	nàng
+đjên	điên
+xink	xinh
+hđộng	hành động
+đhọc	đại học
+bn	bạn
+thik	thích
+cj	chị
+nguoi	người
+nógn	nóng
+cmt	comment
+gđ	gia đình
+oh	ồ
+ctác	công tác
+sg	sài gòn
+ah	à
+ạh	ạ
+rì	gì
+vn	việt nam
+đag	đang
+àk	à
+uh	ừ
+hnay	hôm nay
+ukm	ừm
+tq	trung quốc
+ctr	chương trình
+nch	nói chuyện
+trieu	triệu
+nta	người ta
+ngèo	nghèo
+kêh	kênh
+ak	à
+qc	quảng cáo
+baoh	bao giờ
+zui	vui
+zẻ	vẻ
+tym	tim
+fb	facebook
+thich	thích
+chs	chẳng hiểu sao
+ytb	youtube
+xl	xin lỗi
+vv	vui vẻ
+ns	nói
+iu	yêu
+zạ	vậy
+jo	giờ
+lm	làm
+vd	ví dụ
+cũng z	cũng vậy
+z là	vậy là
+cty	công ty
+hqua	hôm qua
+xog	xong
+uk	ừ
+nhoé	nhé
+biet	biết
+quí	quý
+nghành	ngành
+ngừoi	người
+trog	trong
+tgian	thời gian
+biêt	biết
+fải	phải
+nguời	người
+thằg	thằng
+đuợc	được
+àh	à
+onl	online
+sđt	số điện thoại
+klq	không liên quan
+tphcm	thành phố hồ chí minh

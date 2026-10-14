@@ -1,0 +1,87 @@
+# Những từ KHÔNG được xóa khi bật loại bỏ stopword, dù có trong stopwords_vi.txt.
+# Lý do: danh sách stopword phổ thông chứa nhiều từ mang tín hiệu cảm xúc/khía cạnh
+# (phủ định, mức độ, tương phản, tính từ đánh giá). Xóa chúng làm "không tốt" thành "tốt",
+# "pin rất trâu" thành "pin trâu"...
+# --- Phủ định ---
+không
+chẳng
+chả
+chưa
+đừng
+chớ
+không_hề
+chẳng_hề
+chưa_hề
+chả_hề
+đâu_có
+chẳng_có
+không_có
+# --- Mức độ / so sánh ---
+rất
+quá
+hơi
+khá
+lắm
+cực
+cực_kỳ
+cực_kì
+siêu
+vô_cùng
+hơn
+nhất
+kém
+thật
+thật_sự
+thực_sự
+hoàn_toàn
+tương_đối
+càng
+# --- Tương phản / nhượng bộ ---
+nhưng
+nhưng_mà
+tuy
+tuy_nhiên
+tuy_vậy
+mặc_dù
+song
+có_điều
+chỉ_có
+riêng
+vẫn
+còn
+# --- Từ đánh giá hay bị liệt vào stopword ---
+được
+ổn
+tốt
+nhanh
+chậm
+mạnh
+yếu
+lâu
+cao
+thấp
+nhỏ
+to
+lớn
+đủ
+dễ
+khó
+nhiều
+ít
+đắt
+rẻ
+mới
+cũ
+nóng
+đẹp
+xấu
+hay
+dở
+ngon
+mượt
+lag
+đáng
+tiếc
+thích
+hài_lòng
+thất_vọng

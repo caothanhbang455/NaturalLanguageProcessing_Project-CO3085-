@@ -1,0 +1,9 @@
+# Chỉ các gói Google Colab thường CHƯA có sẵn. Cài từng gói một (xem ô bootstrap trong notebook)
+# để một gói lỗi không làm hỏng cả quá trình. numpy/pandas/scikit-learn/scipy/matplotlib/seaborn/
+# torch/transformers/joblib/tqdm đã có sẵn trong Colab nên KHÔNG cài lại (tránh xung đột phiên bản).
+
+underthesea      # chuẩn hóa dấu thanh khi tiền xử lý (bắt buộc cho đúng kết quả)
+pyvi             # tách từ phương án 2 (chỉ dùng nếu bật word_segmentation="pyvi")
+gensim           # Word2Vec / FastText / Doc2Vec (chế độ all_features)
+sentence-transformers  # embedding Transformer (chế độ all_features)
+wordcloud        # vẽ word cloud

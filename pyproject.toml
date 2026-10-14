@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "absa-visfd"
+version = "0.1.0"
+description = "Aspect-Based Sentiment Analysis cho bình luận điện thoại tiếng Việt (UIT-ViSFD)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []  # Xem requirements.txt (tách riêng để cài nhanh trên Colab/Kaggle).
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "D"]
+# N803/N806: giữ quy ước ML viết hoa ma trận (X, Y, X_train) như scikit-learn.
+ignore = ["D100", "D104", "D105", "D107", "D203", "D213", "B905", "N803", "N806"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.black]
+line-length = 99
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

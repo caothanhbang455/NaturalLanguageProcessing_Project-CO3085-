@@ -1,0 +1,17 @@
+# Sinh ra khi chạy
+outputs/
+notebooks/_*.ipynb
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Dữ liệu test ẩn (không commit khi được công bố)
+UIT-ViSFD/Test.csv
+
+# Môi trường
+.venv/
+.env
+dist/
