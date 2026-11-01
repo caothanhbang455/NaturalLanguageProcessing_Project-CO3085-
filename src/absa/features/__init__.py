@@ -1,6 +1,5 @@
-"""Các cách biểu diễn văn bản: sparse, static embedding, contextual embedding, hybrid."""
+"""Các cách biểu diễn văn bản: sparse (túi từ) và static embedding."""
 
-from absa.features.contextual import TransformerEmbeddingVectorizer
 from absa.features.registry import (
     FEATURE_REGISTRY,
     FeatureSpec,
@@ -21,7 +20,6 @@ __all__ = [
     "FeatureSpec",
     "GensimWordEmbeddingVectorizer",
     "PretrainedFastTextVectorizer",
-    "TransformerEmbeddingVectorizer",
     "build_feature",
     "feature_catalog",
     "get_feature_spec",

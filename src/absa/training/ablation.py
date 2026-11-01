@@ -32,10 +32,10 @@ logger = get_logger(__name__)
 
 
 def cumulative_variants() -> dict[str, PreprocessConfig]:
-    """Thêm dần từng bước từ cấu hình tối thiểu tới ``classic``, rồi thử hai bước tùy chọn.
+    """Thêm dần từng bước từ cấu hình tối thiểu tới ``classic``, rồi thử một bước tùy chọn.
 
-    Hai dòng cuối (``+ word segmentation``, ``+ stopword removal``) là các bước *không* có
-    trong ``classic`` – chúng được giữ trong bảng để báo cáo vì sao bị loại.
+    Dòng cuối (``+ stopword removal``) là bước *không* có trong ``classic`` – nó được giữ
+    trong bảng để báo cáo vì sao bị loại.
     """
     steps: list[tuple[str, dict]] = [
         ("0. minimal (lower + punct)", {}),
@@ -50,8 +50,7 @@ def cumulative_variants() -> dict[str, PreprocessConfig]:
     for name, change in steps:
         current = current.replace(**change)
         variants[name] = current
-    variants["7. classic + word segmentation"] = current.replace(word_segmentation="underthesea")
-    variants["8. classic + stopword removal"] = current.replace(remove_stopwords=True)
+    variants["7. classic + stopword removal"] = current.replace(remove_stopwords=True)
     return variants
 
 
@@ -65,7 +64,6 @@ def leave_one_out_variants() -> dict[str, PreprocessConfig]:
         "- elongation": {"reduce_elongation": False},
         "- teencode & final-ng": {"expand_teencode": False, "restore_final_ng": False},
         "- negation": {"negation_window": 0},
-        "+ word segmentation": {"word_segmentation": "underthesea"},
         "+ stopword removal": {"remove_stopwords": True},
     }
     variants = {"classic (full)": full}

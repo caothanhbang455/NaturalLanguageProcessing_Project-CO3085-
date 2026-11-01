@@ -11,13 +11,13 @@ Code: `src/absa/preprocessing/`. Từ điển: `resources/lexicons/`. Bằng ch�
 
 ## Các bước
 
-Bảng dưới liệt kê mọi bước đã cài đặt theo đúng thứ tự chạy. Profile `classic` bật tất cả các bước, trừ tách từ (12) và stopword (15).
+Bảng dưới liệt kê mọi bước đã cài đặt theo đúng thứ tự chạy. Chỉ có một profile `classic`, bật tất cả các bước, trừ stopword (14).
 
 Tỉ lệ (%) là phần trăm bình luận train có xu hướng đó (`eda.text_pattern_report`).
 
 | # | Bước | Luật | Động cơ (xu hướng trên train) |
 |---|---|---|---|
-| 0 | Xuống dòng → `.` | `\r\n` thành ranh giới câu | 11,5% bình luận dùng xuống dòng thay dấu câu; nếu không xử lý, bộ tách từ có thể ghép nhầm từ ở cuối dòng này với từ ở đầu dòng sau. |
+| 0 | Xuống dòng → `.` | `\r\n` thành ranh giới câu | 11,5% bình luận dùng xuống dòng thay dấu câu; nếu không xử lý, bước gắn phủ định có thể vượt qua ranh giới câu. |
 | 1 | Xóa URL/email/SĐT | regex | Hiếm, nhưng không mang thông tin khía cạnh. |
 | 2 | Emoji → `emopos/emoneg/emoneu` | Bảng ghi đè + **suy luận từ tên Unicode** (`SMILING`, `CRYING`, `THUMBS DOWN`, ...) | 3,9% có emoji, mang cảm xúc mạnh. Gom về 3 nhãn để tổng quát hóa; luật theo tên Unicode xử lý được cả emoji chưa từng gặp. |
 | 3 | Emoticon ASCII → nhãn cảm xúc | regex `:)) =)) :( T_T ^^ <3 :v` có lookaround tránh bắt nhầm giờ `8:30` | 2,1% bình luận. Phải chạy trước bước bỏ dấu câu. |
@@ -29,35 +29,15 @@ Tỉ lệ (%) là phần trăm bình luận train có xu hướng đó (`eda.tex
 | 9 | Tách dấu câu | `tốt,pin`→`tốt , pin`; gộp `!!!`; giữ `7.990.000` | 14,3% bình luận có dấu câu lặp; dấu câu dính liền từ làm teencode không khớp. |
 | 10 | `-g` → `-ng` | âm tiết có dấu kết thúc bằng *nguyên âm + g* | Luật chính tả: tiếng Việt chỉ có `-ng`, nên `khôg`, `nhữg`, `đag` luôn là viết thiếu. Không áp dụng cho từ ASCII như `lag`. |
 | 11 | Teencode/viết tắt | Từ điển 345 mục, khớp **nguyên token** | `ko/k/dc/đt/nv/sp/tgdd/bin/wf/...`. Token không phải âm tiết chuẩn mà chưa có trong từ điển được liệt kê bằng `eda.nonstandard_token_report` để rà soát. |
-| 12 | Tách từ (**tắt** trong `classic`, bật trong `classic_seg`/`transformer_seg`) | `underthesea` (CRF) | Giả thuyết ban đầu: từ ghép đa âm tiết (`màn_hình`) nên là một đặc trưng. **Ablation bác bỏ giả thuyết này cho mô hình túi-từ** (xem dưới). Vẫn bắt buộc cho PhoBERT vì mô hình được pretrain trên văn bản đã tách từ. |
-| 13 | Gắn phủ định | `không mượt`→`không_mượt`, bỏ qua từ đệm (`không được mượt`→`không_được_mượt`). **Dừng tại dấu câu** (ranh giới câu) và tại một từ phủ định khác | Phủ định đảo cảm xúc; với túi từ, `không_mượt` cần là đặc trưng riêng (Das & Chen 2001; Pang et al. 2002). Phải chạy khi dấu câu còn là token riêng: `"... em ko ? ) . - cam thì"` cho `ko` đứng một mình, không thành `không_cam`. |
-| 14 | Xóa dấu câu | | Xóa sau bước tách từ (nếu có) và sau bước gắn phủ định, để cả hai bước đó còn thấy ranh giới câu. |
-| 15 | Stopword (tắt mặc định) | danh sách refs **trừ** `protected_words.txt` | Chỉ bật nếu ablation cho thấy có lợi. TF-IDF với `max_df` đã tự giảm trọng số từ phổ biến. |
+| 12 | Gắn phủ định | `không mượt`→`không_mượt`, bỏ qua từ đệm (`không được mượt`→`không_được_mượt`). **Dừng tại dấu câu** (ranh giới câu) và tại một từ phủ định khác | Phủ định đảo cảm xúc; với túi từ, `không_mượt` cần là đặc trưng riêng (Das & Chen 2001; Pang et al. 2002). Phải chạy khi dấu câu còn là token riêng: `"... em ko ? ) . - cam thì"` cho `ko` đứng một mình, không thành `không_cam`. |
+| 13 | Xóa dấu câu | | Xóa sau bước gắn phủ định, để bước đó còn thấy ranh giới câu. |
+| 14 | Stopword (tắt mặc định) | danh sách refs **trừ** `protected_words.txt` | Chỉ bật nếu ablation cho thấy có lợi. TF-IDF với `max_df` đã tự giảm trọng số từ phổ biến. |
 
-### Vì sao `classic` không tách từ? (bằng chứng ablation)
-
-Lượt ablation đầu tiên (TF-IDF từ 1–2 gram + Logistic Regression, chiến lược `joint`, đo trên dev) cho kết quả:
-
-| Cấu hình | pair F1 macro | pair F1 micro | Kích thước từ vựng |
-|---|---|---|---|
-| Đầy đủ các bước, **không** tách từ | **0,530** | **0,738** | 6.936 |
-| Đầy đủ các bước, **có** tách từ | 0,503 | 0,712 | 11.917 |
-
-Cả hai kiểu ablation (cộng dồn và bỏ từng bước) đều cho cùng chiều. Giải thích:
-1. Bi-gram âm tiết (`màn hình`) đã bắt được từ ghép, nên tách từ không thêm thông tin cho mô hình n-gram.
-2. Bộ tách từ CRF được huấn luyện trên văn bản chuẩn nên sai nhiều với bình luận mạng xã hội (`giật_lang`, `vãi_sạc`). Mỗi lỗi tạo ra một token hiếm mới, khiến từ vựng phình gấp đôi và đặc trưng thưa hơn.
-3. Unigram âm tiết vẫn chia sẻ thông tin giữa các từ ghép có chung âm tiết (`pin`, `pin_trâu`, `sạc_pin`).
-
-Kết luận này chỉ áp dụng cho biểu diễn túi-từ. PhoBERT vẫn dùng văn bản đã tách từ. Nhóm có thể bật lại bằng profile `classic_seg` để kiểm tra trên các biểu diễn khác.
-
-## Profile cho từng họ biểu diễn
+## Profile tiền xử lý
 
 | Profile | Dùng cho | Khác biệt |
 |---|---|---|
-| `classic` | BoW, TF-IDF, Word2Vec, FastText, Doc2Vec, TextCNN, BiLSTM | Đầy đủ các bước trên, mức âm tiết (không tách từ) |
-| `classic_seg` | Đối chiếu trong ablation | Như `classic` + tách từ underthesea |
-| `transformer_seg` | PhoBERT, vietnamese-bi-encoder | Giữ dấu câu và số; emoji → `vui/buồn`; không gắn phủ định (mô hình tự hiểu ngữ cảnh) |
-| `transformer_raw` | ViSoBERT, XLM-R, E5, GTE, BGE-M3, Qwen3, SBERT | Như trên nhưng không tách từ và **giữ nguyên emoji** (tokenizer đã học emoji) |
+| `classic` | Mọi biểu diễn (BoW, TF-IDF, Word2Vec, FastText, Doc2Vec) | Đầy đủ các bước trên, mức âm tiết (không tách từ); bi-gram bắt cụm từ ghép |
 
 ## Thay đổi so với tài nguyên trong `refs/`
 
@@ -67,12 +47,11 @@ Kết luận này chỉ áp dụng cho biểu diễn túi-từ. PhoBERT vẫn d�
 | `vietnamese-stopwords.txt` | Chứa `rất`, `quá`, `chưa`, `nhưng`, `được`, `khá`, `nhanh`, `mạnh`, `lâu`, `cao`, `thấp`, ... | Dùng sau khi trừ `protected_words.txt`; tắt mặc định |
 | `teencode.txt` (398 mục) | Mục sai/mơ hồ trong domain: `note`→`chú ý` (Galaxy Note), `face`→`facebook` (face ID), `c`→`chị` (USB-C), `a`→`anh`; `hic`→`hích`, `plz`→`pờ ly`; khai triển tục tĩu | Giữ lại 230 mục của refs (bỏ các mục lỗi và các mục trùng với phần bổ sung), thêm 115 mục văn phong review điện thoại (đầu file `teencode.tsv`); tổng 345 |
 | `emojicon.txt` (43 emoji → từ) | Chỉ phủ 43 emoji, gán từ không nhất quán (`😂`→`cười`, `😓`→`bùn`) | Thay bằng 3 nhãn cảm xúc, bảng ghi đè và luật suy luận theo tên Unicode |
-| Pipeline refs | Xóa toàn bộ số và dấu câu trước khi tách từ, lọc theo POS | Thay bằng token số theo loại; xóa dấu câu sau khi tách từ; không lọc POS (mất danh từ khía cạnh) |
+| Pipeline refs | Xóa toàn bộ số và dấu câu trước khi gắn phủ định, lọc theo POS | Thay bằng token số theo loại; xóa dấu câu sau khi gắn phủ định; không lọc POS (mất danh từ khía cạnh) |
 
 ## Hạn chế đã biết
 
 - Bình luận gần như không dấu (5/7.786 ở train) chưa được khôi phục dấu. TF-IDF ký tự và FastText phần nào bù lại.
-- Tách từ CRF sai khá nhiều với văn bản mạng xã hội (`giật_lang`); đây là lý do `classic` không tách từ.
 - `4g` mơ hồ (mạng 4G hay RAM 4GB) nên được giữ thành token riêng `numg` để mô hình dựa vào ngữ cảnh.
 - Đơn vị viết tắt không có trong luật số (vd `10n` = 10 ngày) thành `num n`.
 
@@ -84,5 +63,4 @@ Số phiên bản nằm trong khóa cache và `run_id`, nên khi logic đổi th
 |---|---|
 | 1 | Bản đầu |
 | 2 | Gắn phủ định không còn vượt qua dấu câu/ranh giới câu (sửa lỗi `ko ? . cam` → `không_cam`) và không nối phủ định kép (`không không tốt` → `không`, `không_tốt`) |
-
-Số liệu ablation trong tài liệu này (mục "Vì sao `classic` không tách từ?") đo ở **phiên bản 1**.
+| 3 | Bỏ bước tách từ và các profile `classic_seg`/`transformer_seg`/`transformer_raw`; chỉ còn `classic` |

@@ -19,7 +19,6 @@ Thứ tự gợi ý (và cũng là thứ tự pipeline dùng):
 9. :func:`normalize_punctuation`    – tách dấu câu khỏi từ (chỉ xóa sau bước tách từ).
 10. :func:`restore_final_ng`        – ``khôg nhữg đag`` -> ``không những đang``.
 11. :class:`TeencodeNormalizer`     – ``ko dc đt nv`` -> ``không được điện thoại nhân viên``.
-12. :func:`split_joined_placeholders` – sau tách từ, tách token giữ chỗ bị ghép nhầm.
 """
 
 from __future__ import annotations
@@ -71,8 +70,8 @@ _LINE_BREAK_RE = re.compile(r"\s*[\r\n]+\s*")
 def mark_line_breaks(text: str) -> str:
     r"""Đổi xuống dòng thành dấu chấm (11% bình luận train dùng xuống dòng thay dấu câu).
 
-    Nếu chỉ coi xuống dòng là khoảng trắng, từ cuối dòng trên và từ đầu dòng dưới có thể
-    bị bộ tách từ ghép nhầm (``ngon \n Âm báo`` -> ``ngon_âm``).
+    Nếu chỉ coi xuống dòng là khoảng trắng, bước gắn phủ định có thể vượt ranh giới câu
+    (``pin ko \n cam tốt`` -> ``không_cam`` dù ``cam`` thuộc câu khác).
     """
     return _LINE_BREAK_RE.sub(" . ", text.strip())
 
@@ -394,13 +393,14 @@ _REPEATED_PUNCT_RE = re.compile(r"([^\w\s])\1+")
 
 
 def normalize_punctuation(text: str, remove: bool = True) -> str:
-    """Bỏ dấu câu (cho mô hình túi-từ) hoặc chuẩn hóa chúng (cho Transformer).
+    """Bỏ dấu câu (cho mô hình túi-từ) hoặc chỉ tách/gộp dấu câu.
 
     Args:
         text: Chuỗi đầu vào.
         remove: ``True`` thay mọi ký tự không phải chữ/số/``_`` bằng khoảng trắng.
             ``False`` chỉ gộp dấu lặp (``!!!`` -> ``!``) và tách dấu khỏi từ
-            (``tốt,pin`` -> ``tốt , pin``) – mô hình pretrained hiểu được dấu câu.
+            (``tốt,pin`` -> ``tốt , pin``) – dùng trước bước gắn phủ định để dấu câu
+            trở thành ranh giới câu.
     """
     if remove:
         return _PUNCT_RE.sub(" ", text)
@@ -463,37 +463,6 @@ class TeencodeNormalizer:
         if self._phrase_re is not None:
             text = self._phrase_re.sub(lambda m: self.phrases[m.group(0)], text)
         return " ".join(self.single.get(tok, tok) for tok in text.split())
-
-
-PLACEHOLDER_TOKENS: frozenset[str] = frozenset(
-    {tok for _, tok in NUMBER_RULES} | set(SENTIMENT_TAGS.values())
-)
-
-
-def split_joined_placeholders(text: str) -> str:
-    """Tách token giữ chỗ bị bộ tách từ nối nhầm (``cao_numduration`` -> ``cao numduration``).
-
-    Bộ tách từ coi token lạ như ``numduration`` là một âm tiết và đôi khi ghép nó với
-    từ bên cạnh; token giữ chỗ phải luôn đứng riêng để mang đúng ý nghĩa.
-    """
-    tokens = []
-    for token in text.split():
-        parts = token.split("_")
-        if len(parts) > 1 and any(p in PLACEHOLDER_TOKENS for p in parts):
-            buffer: list[str] = []
-            for part in parts:
-                if part in PLACEHOLDER_TOKENS:
-                    if buffer:
-                        tokens.append("_".join(buffer))
-                        buffer = []
-                    tokens.append(part)
-                else:
-                    buffer.append(part)
-            if buffer:
-                tokens.append("_".join(buffer))
-        else:
-            tokens.append(token)
-    return " ".join(tokens)
 
 
 def normalize_whitespace(text: str) -> str:

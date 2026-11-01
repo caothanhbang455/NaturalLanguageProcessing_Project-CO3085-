@@ -3,7 +3,7 @@
 Đồ án môn Xử lý Ngôn ngữ Tự nhiên (HCMUT, HK261). Hệ thống nhận bình luận của khách hàng về điện thoại, xác định **khía cạnh** được nhắc tới (màn hình, pin, camera, giá, ...) và **cảm xúc** với từng khía cạnh, sau đó tổng hợp điểm mạnh và điểm yếu của sản phẩm.
 
 - **Dữ liệu**: UIT-ViSFD, 11.122 bình luận (train 7.786 / dev 1.112 / test 2.224 – test đang ẩn), 10 khía cạnh + `OTHERS`, 3 cảm xúc.
-- **Hai nhánh mô hình**: ML truyền thống (lưới **M mô hình x N biểu diễn**) và Deep Learning (TextCNN, BiLSTM-Attention, fine-tune PhoBERT/ViSoBERT/XLM-R).
+- **Mô hình**: ML truyền thống (lưới **M mô hình x N biểu diễn**: BoW/TF-IDF/Word2Vec/FastText/Doc2Vec).
 - **Một notebook duy nhất** (`notebooks/absa_pipeline.ipynb`) điều phối toàn bộ quy trình; mọi logic nằm trong gói `src/absa`.
 
 ## Cấu trúc thư mục
@@ -17,17 +17,15 @@
 │   ├── eda/                        #   Thống kê EDA, chỉ trả về bảng số liệu
 │   ├── preprocessing/              #   Chuẩn hóa tiếng Việt theo luật tổng quát
 │   │   ├── normalizers.py          #     Unicode, emoji, emoticon, số+đơn vị, kéo dài, -ng, teencode
-│   │   ├── tokenization.py         #     Tách từ, gắn phủ định, stopword
+│   │   ├── tokenization.py         #     Gắn phủ định, stopword
 │   │   ├── lexicons.py             #     Nạp từ điển trong resources/lexicons
 │   │   └── pipeline.py             #     PreprocessConfig, TextPreprocessor, PreparedCorpus (có cache)
 │   ├── features/                   #   N cách biểu diễn văn bản
 │   │   ├── sparse.py               #     BoW, TF-IDF từ/ký tự (8 biến thể sparse trong registry)
-│   │   ├── static_embeddings.py    #     Word2Vec, FastText, Doc2Vec, FastText cc.vi
-│   │   ├── contextual.py           #     PhoBERT, ViSoBERT, SBERT, E5, GTE, BGE-M3, Qwen3 (đóng băng, có cache)
+│   │   ├── static_embeddings.py    #     Word2Vec, FastText, Doc2Vec
 │   │   └── registry.py             #     Danh mục biểu diễn + tóm tắt ý tưởng
 │   ├── models/
-│   │   ├── ml/                     #   ABSAClassifier (multilabel / joint / two_stage) + registry M mô hình
-│   │   └── dl/                     #   Kiến trúc, dữ liệu, trainer, registry mô hình DL
+│   │   └── ml/                     #   ABSAClassifier (multilabel / joint / two_stage) + registry M mô hình
 │   ├── training/                   #   Lưới M x N, tinh chỉnh, cross-validation, ablation, mô hình cuối
 │   ├── evaluation/                 #   Metric ABSA, phân tích lỗi
 │   ├── visualization/              #   Toàn bộ hàm vẽ (EDA + kết quả)
@@ -60,12 +58,11 @@ Notebook đi theo các bước chuẩn của một dự án ML (tương tự CRI
 | 3 | Tiền xử lý | Minh họa từng bước, tác động lên từ vựng, **ablation** |
 | 4 | Biểu diễn | Danh mục N biểu diễn |
 | 5 | Mô hình ML | Baseline, lưới M x N x {multilabel, joint, two_stage}, heatmap, thống kê theo chiến lược/biểu diễn/mô hình, tinh chỉnh top-k |
-| 6 | Mô hình DL | TextCNN / BiLSTM / fine-tune Transformer (bật khi có GPU) |
-| 7 | Chọn mô hình | Bảng xếp hạng chung ML + DL trên dev |
-| 8 | Đánh giá chi tiết | Theo khía cạnh, confusion matrix, từng cặp nhãn |
-| 9 | Phân tích lỗi | Trên dự đoán out-of-fold của train |
-| 10 | Mô hình cuối & test | Huấn luyện lại trên train+dev, đánh giá test một lần |
-| 11 | Triển khai | `ABSAPipeline` (.joblib), tổng hợp theo sản phẩm, Streamlit |
+| 6 | Chọn mô hình | Bảng xếp hạng các cấu hình trên dev |
+| 7 | Đánh giá chi tiết | Theo khía cạnh, confusion matrix, từng cặp nhãn |
+| 8 | Phân tích lỗi | Trên dự đoán out-of-fold của train |
+| 9 | Mô hình cuối & test | Huấn luyện lại trên train+dev, đánh giá test một lần |
+| 10 | Triển khai | `ABSAPipeline` (.joblib), tổng hợp theo sản phẩm, Streamlit |
 
 ### Chính sách dữ liệu (chống rò rỉ thông tin)
 
@@ -104,8 +101,6 @@ streamlit run app/streamlit_app.py   # sau khi notebook đã lưu outputs/models
 - **Mô hình ML cơ bản** (`CORE_MODELS` trong `models/ml/registry.py`): không có cây/ensemble (Random Forest, boosting, XGBoost, AdaBoost) hay mạng nơ-ron.
 - **Thời gian**: chưa đo trọn vẹn với bộ mặc định (ablation, tinh chỉnh và việc học embedding là phần tốn nhất). Colab miễn phí (2 CPU) chậm hơn máy nhiều nhân khoảng 4–6 lần (ước tính); đặt `RUN_ABLATION = False`, `RUN_TUNING = False` để nhanh hơn.
 - Kết quả lưới được ghi từng dòng vào `outputs/reports/ml_grid_<mode>.csv`. Chạy lại sẽ tiếp tục từ chỗ dừng.
-- Embedding contextual được cache theo câu trong `outputs/cache/embeddings`.
-- Nhánh DL: đặt `RUN_DL = True` và thêm `phobert_base_v2`, `visobert` vào `DL_MODELS` khi chạy trên GPU (Colab/Kaggle).
 
 ## Chạy trên Google Colab
 
@@ -113,13 +108,12 @@ streamlit run app/streamlit_app.py   # sau khi notebook đã lưu outputs/models
 2. Upload zip lên Google Drive, bật chia sẻ **Anyone with the link**, copy link (hoặc file-id).
 3. Mở `notebooks/absa_pipeline.ipynb` trên Colab (upload riêng file notebook, hoặc mở từ Drive).
 4. Dán link/file-id vào biến `GDRIVE_ZIP` ở ô "Thiết lập (Colab / máy cá nhân)", rồi **Runtime → Run all**. Ô đó tự `gdown` zip về `/content`, giải nén, cài các gói còn thiếu (`requirements-colab.txt`) và chuyển vào thư mục project.
-5. Cuối notebook (mục 13) gói `outputs/` thành `absa_outputs.zip` và tải về máy. `/content` là bộ nhớ tạm nên hãy tải trước khi runtime bị ngắt.
+5. Cuối notebook (mục 12) gói `outputs/` thành `absa_outputs.zip` và tải về máy. `/content` là bộ nhớ tạm nên hãy tải trước khi runtime bị ngắt.
 
 ## Mở rộng
 
 - **Thêm biểu diễn**: thêm một `FeatureSpec` vào `src/absa/features/registry.py`.
 - **Thêm mô hình ML**: thêm một `ModelSpec` vào `src/absa/models/ml/registry.py`.
-- **Thêm mô hình DL**: thêm một `DLModelSpec` vào `src/absa/models/dl/registry.py`.
 - **Sửa từ điển**: chỉnh trực tiếp file trong `resources/lexicons/`; cache tiền xử lý tự động bị vô hiệu.
 
 Lưới thí nghiệm tự nhận các mục mới.

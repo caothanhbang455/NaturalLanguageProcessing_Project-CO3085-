@@ -10,24 +10,16 @@ Chi tiết ý tưởng từng biểu diễn: ``docs/feature_representations.md``
 from __future__ import annotations
 
 import importlib.util
-import os
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 import pandas as pd
 from sklearn.base import TransformerMixin
-from sklearn.pipeline import FeatureUnion
 
-from absa.features.contextual import TransformerEmbeddingVectorizer
 from absa.features.sparse import make_bow, make_tfidf_char, make_tfidf_word, make_tfidf_word_char
-from absa.features.static_embeddings import (
-    Doc2VecVectorizer,
-    GensimWordEmbeddingVectorizer,
-    PretrainedFastTextVectorizer,
-)
+from absa.features.static_embeddings import Doc2VecVectorizer, GensimWordEmbeddingVectorizer
 
-FAMILIES = ("sparse", "static", "contextual", "hybrid")
-FASTTEXT_VI_ENV = "ABSA_FASTTEXT_VI_PATH"  # Đường dẫn tới cc.vi.300.bin (tùy chọn).
+FAMILIES = ("sparse", "static")
 
 
 @dataclass(frozen=True)
@@ -36,7 +28,7 @@ class FeatureSpec:
 
     Attributes:
         name: Khóa duy nhất trong registry.
-        family: ``"sparse" | "static" | "contextual" | "hybrid"``.
+        family: ``"sparse" | "static"``.
         profile: Profile tiền xử lý đầu vào (xem :data:`PREPROCESS_PROFILES`).
         output: ``"sparse"`` (ma trận thưa scipy) hoặc ``"dense"`` (numpy).
         non_negative: Giá trị đặc trưng luôn >= 0 (điều kiện của Multinomial/Complement NB).
@@ -63,21 +55,8 @@ class FeatureSpec:
         missing = [p for p in self.requires if importlib.util.find_spec(p) is None]
         if missing:
             return False, f"thiếu gói {missing}"
-        if self.name == "fasttext_cc_vi" and not os.environ.get(FASTTEXT_VI_ENV):
-            return False, f"chưa đặt biến môi trường {FASTTEXT_VI_ENV}"
         return True, ""
 
-
-def _st(model: str, **kwargs) -> Callable[[], TransformerEmbeddingVectorizer]:
-    return lambda: TransformerEmbeddingVectorizer(model, backend="sentence_transformers", **kwargs)
-
-
-def _hf(model: str, **kwargs) -> Callable[[], TransformerEmbeddingVectorizer]:
-    return lambda: TransformerEmbeddingVectorizer(model, backend="hf_mean", **kwargs)
-
-
-_ST = ("sentence_transformers",)
-_HF = ("transformers", "torch")
 
 _SPECS: list[FeatureSpec] = [
     # ------------------------------------------------------------- sparse --
@@ -196,138 +175,6 @@ _SPECS: list[FeatureSpec] = [
         "Doc2Vec PV-DBOW: học trực tiếp vector cho cả văn bản thay vì gộp vector từ.",
         "Le & Mikolov (2014), ICML",
         requires=("gensim",),
-    ),
-    FeatureSpec(
-        "fasttext_cc_vi",
-        "static",
-        "transformer_raw",
-        "dense",
-        False,
-        lambda: PretrainedFastTextVectorizer(os.environ.get(FASTTEXT_VI_ENV, "")),
-        "FastText pretrained trên Common Crawl tiếng Việt (cc.vi.300); cần tải file ~7GB.",
-        "Grave et al. (2018), LREC",
-        heavy=True,
-        requires=("gensim",),
-    ),
-    # --------------------------------------------------------- contextual --
-    FeatureSpec(
-        "phobert",
-        "contextual",
-        "transformer_seg",
-        "dense",
-        False,
-        _hf("vinai/phobert-base-v2", max_length=256),
-        "PhoBERT-base-v2 (RoBERTa tiếng Việt, 20GB văn bản đã tách từ); mean pooling lớp cuối.",
-        "Nguyen & Nguyen (2020), Findings of EMNLP",
-        requires=_HF,
-    ),
-    FeatureSpec(
-        "visobert",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _hf("uitnlp/visobert", max_length=256),
-        "ViSoBERT: pretrain trên văn bản mạng xã hội tiếng Việt (teencode, emoji) – sát domain.",
-        "Nguyen et al. (2023), EMNLP",
-        requires=_HF,
-    ),
-    FeatureSpec(
-        "sbert_multilingual",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _st("sentence-transformers/paraphrase-multilingual-mpnet-base-v2"),
-        "Sentence-BERT đa ngữ (50+ ngôn ngữ) huấn luyện bằng knowledge distillation.",
-        "Reimers & Gurevych (2019, 2020), EMNLP",
-        requires=_ST,
-    ),
-    FeatureSpec(
-        "vietnamese_sbert",
-        "contextual",
-        "transformer_seg",
-        "dense",
-        False,
-        _st("bkai-foundation-models/vietnamese-bi-encoder", max_length=256),
-        "Bi-encoder tiếng Việt (nền PhoBERT) của BKAI-HUST, fine-tune contrastive cho câu.",
-        "BKAI Foundation Models (2023); Nguyen & Nguyen (2020)",
-        requires=_ST,
-    ),
-    FeatureSpec(
-        "multilingual_e5",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _st("intfloat/multilingual-e5-base", prefix="query: "),
-        "multilingual-E5-base: pretrain contrastive yếu giám sát trên 1 tỉ cặp câu đa ngữ.",
-        "Wang et al. (2024), arXiv:2402.05672",
-        requires=_ST,
-    ),
-    FeatureSpec(
-        "gte_multilingual",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _st("Alibaba-NLP/gte-multilingual-base", trust_remote_code=True),
-        "GTE-multilingual-base: encoder 305M, 70+ ngôn ngữ, ngữ cảnh dài 8192 token.",
-        "Zhang et al. (2024), mGTE, EMNLP Industry",
-        requires=_ST,
-    ),
-    FeatureSpec(
-        "bge_m3",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _st("BAAI/bge-m3", batch_size=16),
-        "BGE-M3 (568M, XLM-R large): đa ngữ, đa độ dài, top đầu MMTEB nhóm mã nguồn mở.",
-        "Chen et al. (2024), Findings of ACL",
-        heavy=True,
-        requires=_ST,
-    ),
-    FeatureSpec(
-        "vietnamese_embedding",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _st("AITeamVN/Vietnamese_Embedding", batch_size=16),
-        "BGE-M3 fine-tune thêm trên ~300k cặp tiếng Việt – embedding tiếng Việt mới (2025).",
-        "AITeamVN (2025); Chen et al. (2024)",
-        heavy=True,
-        requires=_ST,
-    ),
-    FeatureSpec(
-        "qwen3_embedding",
-        "contextual",
-        "transformer_raw",
-        "dense",
-        False,
-        _st("Qwen/Qwen3-Embedding-0.6B", batch_size=8),
-        "Qwen3-Embedding-0.6B: embedding dựa trên LLM (2025), dẫn đầu MMTEB ở cỡ nhỏ.",
-        "Zhang et al. (2025), arXiv:2506.05176",
-        heavy=True,
-        requires=_ST,
-    ),
-    # ------------------------------------------------------------- hybrid --
-    FeatureSpec(
-        "hybrid_tfidf_e5",
-        "hybrid",
-        "transformer_raw",
-        "sparse",
-        False,
-        lambda: FeatureUnion(
-            [
-                ("tfidf", make_tfidf_word_char()),
-                ("e5", _st("intfloat/multilingual-e5-base", prefix="query: ")()),
-            ]
-        ),
-        "Ghép TF-IDF (bắt từ khóa khía cạnh) với E5 (ngữ nghĩa câu); cả hai đã chuẩn hóa L2.",
-        "Kết hợp sparse + dense, tương tự hybrid retrieval (Luan et al., 2021, TACL)",
-        requires=_ST,
     ),
 ]
 

@@ -8,8 +8,6 @@ Sơ đồ chung: **văn bản → vector cố định số chiều → bộ phâ
 |---|---|---|---|---|
 | Sparse | BoW, TF-IDF từ/ký tự | 10⁴–10⁵ (thưa) | Có (từ vựng, IDF) | Không (chỉ n-gram cục bộ) |
 | Static | Word2Vec, FastText, Doc2Vec | 300 | Có (huấn luyện trên train) | Không (1 từ = 1 vector) |
-| Contextual | PhoBERT, ViSoBERT, SBERT, E5, GTE, BGE-M3, Qwen3 | 768–1024 | Không (pretrained, đóng băng) | Có |
-| Hybrid | TF-IDF + E5 | thưa + 768 | Một phần | Một phần |
 
 ---
 
@@ -17,12 +15,12 @@ Sơ đồ chung: **văn bản → vector cố định số chiều → bộ phâ
 
 ### 1.1 Bag-of-Words (`bow`)
 - **Ý tưởng**: mỗi chiều là một n-gram trong từ vựng, giá trị là số lần xuất hiện. Bỏ qua thứ tự từ ngoài phạm vi n-gram.
-- **Trong project**: uni + bi-gram trên văn bản đã tách từ (`màn_hình`, `pin trâu`, `không_mượt`), bỏ n-gram xuất hiện ở ít hơn 2 bình luận.
+- **Trong project**: uni + bi-gram trên văn bản đã tiền xử lý (`màn hình`, `pin trâu`, `không_mượt`), bỏ n-gram xuất hiện ở ít hơn 2 bình luận.
 - **Ưu**: đơn giản, nhanh, dễ giải thích (xem được trọng số từng từ). **Nhược**: từ phổ biến lấn át; `đẹp` và `xinh` là hai chiều không liên quan.
 - **Tham khảo**: Harris (1954); Manning, Raghavan & Schütze (2008), *Introduction to Information Retrieval*.
 
 ### 1.2 TF-IDF mức từ (`tfidf_word`)
-- **Ý tưởng**: trọng số = tần suất trong câu × `log(N / số câu chứa từ)`. Từ xuất hiện khắp nơi (`máy`, `mua`) bị giảm trọng số, từ đặc trưng cho khía cạnh (`pin`, `camera`, `nhân_viên`) được nhấn mạnh. Dùng `sublinear_tf` (`1 + log tf`) để từ lặp nhiều lần không lấn át.
+- **Ý tưởng**: trọng số = tần suất trong câu × `log(N / số câu chứa từ)`. Từ xuất hiện khắp nơi (`máy`, `mua`) bị giảm trọng số, từ đặc trưng cho khía cạnh (`pin`, `camera`, `nhân viên`) được nhấn mạnh. Dùng `sublinear_tf` (`1 + log tf`) để từ lặp nhiều lần không lấn át.
 - **Ưu**: baseline mạnh nhất trong nhóm cổ điển cho văn bản ngắn. Với ABSA, từ khóa khía cạnh là tín hiệu rất mạnh nên TF-IDF thường đã tốt.
 - **Tham khảo**: Sparck Jones (1972); Salton & Buckley (1988).
 
@@ -67,71 +65,9 @@ Mỗi biến thể chỉ thay **một** yếu tố so với biểu diễn lõi, 
 - **Ý tưởng**: PV-DBOW học **trực tiếp** một vector cho cả văn bản bằng cách dùng nó để dự đoán các từ trong văn bản. Văn bản mới được suy luận vector bằng vài vòng gradient.
 - **Tham khảo**: Le & Mikolov (2014), *Distributed Representations of Sentences and Documents*, ICML.
 
-### 2.4 FastText pretrained `cc.vi.300` (`fasttext_cc_vi`, tùy chọn)
-- **Ý tưởng**: FastText huấn luyện sẵn trên Common Crawl + Wikipedia tiếng Việt (hàng tỉ token), mức âm tiết. Cần tải file ~7GB và đặt biến môi trường `ABSA_FASTTEXT_VI_PATH`.
-- **Tham khảo**: Grave et al. (2018), *Learning Word Vectors for 157 Languages*, LREC.
+## 3. Câu hỏi nghiên cứu mà lưới M x N trả lời
 
----
-
-## 3. Họ contextual embedding (Transformer pretrained, đóng băng)
-
-Ý tưởng chung: Transformer dùng **self-attention** để mỗi token "nhìn" toàn câu, nên vector của `trâu` trong `pin trâu` khác với trong `con trâu`. Mô hình được pretrain trên lượng văn bản rất lớn. Ở đây ta **không fine-tune**: chỉ lấy vector câu (mean pooling hoặc vector câu chuyên dụng) làm đặc trưng cho bộ phân loại ML. Cách này cho phép so sánh công bằng *chất lượng biểu diễn* với TF-IDF trên cùng bộ phân loại, và chạy được trên CPU. Fine-tune đầy đủ nằm ở nhánh DL.
-
-Có hai loại:
-- **Encoder thuần** (PhoBERT, ViSoBERT): pretrain bằng Masked Language Modeling, vector câu = trung bình hidden state lớp cuối. Mạnh về ngôn ngữ nhưng vector câu chưa được tối ưu cho độ tương đồng.
-- **Sentence embedding** (SBERT, E5, GTE, BGE-M3, Qwen3): fine-tune thêm bằng **contrastive learning** (kéo câu cùng nghĩa lại gần, đẩy câu khác nghĩa ra xa), nên vector câu dùng trực tiếp được.
-
-### 3.1 PhoBERT-base-v2 (`phobert`)
-- **Ý tưởng**: RoBERTa huấn luyện trên ~20GB văn bản tiếng Việt **đã tách từ** (v2 thêm dữ liệu). Là mô hình ngôn ngữ đơn ngữ tiếng Việt phổ biến nhất.
-- **Trong project**: dùng profile `transformer_seg` (văn bản đã tách từ, giữ dấu câu, emoji → từ), tối đa 256 token.
-- **Tham khảo**: Nguyen & Nguyen (2020), *PhoBERT: Pre-trained language models for Vietnamese*, Findings of EMNLP.
-
-### 3.2 ViSoBERT (`visobert`)
-- **Ý tưởng**: pretrain trên văn bản **mạng xã hội** tiếng Việt (Facebook, TikTok, YouTube): đúng văn phong có teencode, emoji, viết tắt như bình luận UIT-ViSFD. Tokenizer giữ được emoji.
-- **Trong project**: profile `transformer_raw` (không tách từ, giữ emoji).
-- **Tham khảo**: Nguyen et al. (2023), *ViSoBERT: A Pre-Trained Language Model for Vietnamese Social Media Text Processing*, EMNLP.
-
-### 3.3 Sentence-BERT đa ngữ (`sbert_multilingual`)
-- **Ý tưởng**: kiến trúc siamese tạo vector câu so sánh được bằng cosine. Bản đa ngữ được tạo bằng **knowledge distillation**: mô hình học sinh đa ngữ bắt chước vector của mô hình tiếng Anh trên các cặp câu dịch.
-- **Mô hình**: `paraphrase-multilingual-mpnet-base-v2` (50+ ngôn ngữ, có tiếng Việt).
-- **Tham khảo**: Reimers & Gurevych (2019), EMNLP; Reimers & Gurevych (2020), *Making Monolingual Sentence Embeddings Multilingual*, EMNLP.
-
-### 3.4 Vietnamese bi-encoder (`vietnamese_sbert`)
-- **Ý tưởng**: PhoBERT fine-tune theo kiểu SBERT (contrastive) trên dữ liệu tiếng Việt. Kết hợp hiểu biết tiếng Việt của PhoBERT với vector câu chất lượng của SBERT. Cần văn bản đã tách từ.
-- **Mô hình**: `bkai-foundation-models/vietnamese-bi-encoder` (BKAI, ĐH Bách khoa Hà Nội, 2023).
-
-### 3.5 multilingual-E5 (`multilingual_e5`)
-- **Ý tưởng**: pretrain contrastive yếu giám sát trên ~1 tỉ cặp văn bản đa ngữ, sau đó fine-tune có giám sát. Đầu vào cần tiền tố `"query: "`. Là một trong các embedding đa ngữ mạnh và được dùng rộng rãi nhất.
-- **Tham khảo**: Wang et al. (2024), *Multilingual E5 Text Embeddings: A Technical Report*, arXiv:2402.05672.
-
-### 3.6 GTE-multilingual (`gte_multilingual`)
-- **Ý tưởng**: encoder 305M tham số, 70+ ngôn ngữ, ngữ cảnh 8192 token, huấn luyện contrastive nhiều giai đoạn. Hiệu năng gần các mô hình lớn hơn nhiều.
-- **Tham khảo**: Zhang et al. (2024), *mGTE: Generalized Long-Context Text Representation and Reranking Models for Multilingual Text Retrieval*, EMNLP Industry.
-
-### 3.7 BGE-M3 (`bge_m3`, nặng)
-- **Ý tưởng**: nền XLM-RoBERTa-large (568M). "M3" = Multi-lingual (100+ ngôn ngữ), Multi-granularity (tới 8192 token), Multi-functionality (dense, sparse và multi-vector). Huấn luyện bằng **self-knowledge distillation** giữa ba kiểu biểu diễn. Thuộc nhóm đầu bảng MMTEB của các mô hình mã nguồn mở.
-- **Tham khảo**: Chen et al. (2024), *BGE M3-Embedding*, Findings of ACL.
-
-### 3.8 Vietnamese_Embedding (`vietnamese_embedding`, nặng)
-- **Ý tưởng**: BGE-M3 fine-tune thêm trên khoảng 300k cặp câu tiếng Việt. Là một embedding tiếng Việt mới (2025).
-- **Mô hình**: `AITeamVN/Vietnamese_Embedding`.
-
-### 3.9 Qwen3-Embedding-0.6B (`qwen3_embedding`, nặng)
-- **Ý tưởng**: embedding dựa trên **LLM** (Qwen3, decoder-only) thay vì encoder kiểu BERT. Vector câu lấy từ token cuối; huấn luyện nhiều giai đoạn với dữ liệu tổng hợp do LLM sinh ra. Đứng đầu MMTEB trong nhóm cỡ nhỏ (6/2025), đại diện cho xu hướng "LLM làm embedding" hiện nay.
-- **Tham khảo**: Zhang et al. (2025), *Qwen3 Embedding*, arXiv:2506.05176.
-
----
-
-## 4. Hybrid (`hybrid_tfidf_e5`)
-- **Ý tưởng**: nối TF-IDF (từ khóa khía cạnh chính xác) với E5 (ngữ nghĩa câu, đồng nghĩa). Cả hai đều chuẩn hóa L2 nên cùng thang đo. Tương tự *hybrid retrieval* kết hợp sparse và dense, vốn bù được điểm yếu của nhau.
-- **Tham khảo**: Luan et al. (2021), *Sparse, Dense, and Attentional Representations for Text Retrieval*, TACL.
-
----
-
-## 5. Câu hỏi nghiên cứu mà lưới M x N trả lời
-
-1. **Sparse hay contextual?** Đề yêu cầu so sánh TF-IDF với contextual embedding. Đọc theo hàng của heatmap (cố định mô hình, đổi biểu diễn).
-2. **Embedding tiếng Việt hay đa ngữ?** PhoBERT / ViSoBERT / vietnamese-bi-encoder so với E5 / SBERT / GTE.
-3. **Domain mạng xã hội có giúp không?** ViSoBERT so với PhoBERT.
-4. **Static embedding học trên corpus nhỏ có đủ không?** Word2Vec/FastText so với TF-IDF.
-5. **Mô hình nào hợp với biểu diễn nào?** Tuyến tính thường thắng trên sparse; SVM-RBF/MLP thường hợp hơn với embedding đặc.
+1. **Sparse hay static?** Đọc theo hàng của heatmap (cố định mô hình, đổi biểu diễn) để so TF-IDF với Word2Vec/FastText/Doc2Vec.
+2. **Static embedding học trên corpus nhỏ có đủ không?** Word2Vec/FastText so với TF-IDF.
+3. **Chi tiết nào của sparse đáng giá?** Các biến thể ở mục 1.5 tách riêng ảnh hưởng của bigram, trigram, nhị phân hóa và n-gram ký tự.
+4. **Mô hình nào hợp với biểu diễn nào?** Tuyến tính thường thắng trên sparse; SVM-RBF/MLP thường hợp hơn với embedding đặc.

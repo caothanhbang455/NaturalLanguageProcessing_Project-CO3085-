@@ -9,18 +9,10 @@ Ba thành phần chính:
 * :class:`PreparedCorpus` – giữ văn bản thô của các tập và tính lười biếng (có cache
   ra đĩa) văn bản đã xử lý theo từng *profile*.
 
-Vì sao có nhiều profile? Mỗi họ biểu diễn cần đầu vào khác nhau:
-
-* ``classic``         – BoW/TF-IDF/Word2Vec/FastText/TextCNN: chuẩn hóa mạnh, gắn phủ
-  định, gom số và emoji thành token loại, **giữ mức âm tiết** (không tách từ).
-* ``classic_seg``     – như ``classic`` nhưng có tách từ (underthesea); giữ lại để đối chiếu.
-  Ablation trên dev cho thấy tách từ *làm giảm* điểm của mô hình túi-từ (bi-gram âm tiết
-  đã bắt được từ ghép, còn lỗi tách từ trên văn bản mạng xã hội làm từ vựng phình gấp
-  đôi), nên ``classic`` mặc định không tách từ.
-* ``transformer_seg`` – PhoBERT và các mô hình dựa trên PhoBERT: cần văn bản đã tách từ
-  (được pretrain trên dữ liệu tách từ), giữ dấu câu và giá trị số, emoji -> từ.
-* ``transformer_raw`` – mô hình subword đa ngữ (XLM-R, E5, BGE-M3, SBERT, ViSoBERT): chỉ
-  chuẩn hóa nhẹ, giữ nguyên emoji vì tokenizer của chúng đã học emoji.
+Chỉ còn **một** profile ``classic``: chuẩn hóa mạnh, gắn phủ định, gom số và emoji
+thành token loại, **giữ mức âm tiết** (không tách từ). Bi-gram âm tiết đã bắt được từ
+ghép (``màn hình``), còn tách từ trên văn bản mạng xã hội lại làm từ vựng phình gấp đôi,
+nên không tách từ là lựa chọn mặc định.
 """
 
 from __future__ import annotations
@@ -36,7 +28,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from absa.config import PATHS
 from absa.preprocessing import normalizers as nz
 from absa.preprocessing.lexicons import Lexicons, load_lexicons
-from absa.preprocessing.tokenization import WordSegmenter, attach_negation, remove_stopwords
+from absa.preprocessing.tokenization import attach_negation, remove_stopwords
 from absa.utils.io import ensure_dir, hash_object, hash_texts, load_json, save_json
 from absa.utils.logging import get_logger
 
@@ -46,7 +38,8 @@ Step = tuple[str, Callable[[str], str]]
 # Tăng số này mỗi khi đổi *logic* của một bước (không đổi cấu hình): nó nằm trong
 # ``PreprocessConfig.fingerprint`` nên cache tiền xử lý và kết quả thí nghiệm cũ tự bị bỏ qua.
 #   v2: gắn phủ định không vượt qua dấu câu/ranh giới câu (không_cam), không nối phủ định kép.
-PREPROCESS_VERSION = 2
+#   v3: bỏ tách từ và các profile classic_seg/transformer_seg/transformer_raw.
+PREPROCESS_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -65,7 +58,6 @@ class PreprocessConfig:
         remove_punctuation: ``True`` bỏ dấu câu; ``False`` chỉ chuẩn hóa dấu câu.
         restore_final_ng: Sửa ``khôg`` -> ``không``.
         expand_teencode: Thay teencode/viết tắt theo từ điển.
-        word_segmentation: ``"underthesea" | "pyvi" | "none"``.
         negation_window: Số token gộp sau từ phủ định (``0`` = tắt).
         remove_stopwords: Bỏ stopword (đã trừ danh sách bảo vệ).
     """
@@ -80,7 +72,6 @@ class PreprocessConfig:
     remove_punctuation: bool = True
     restore_final_ng: bool = True
     expand_teencode: bool = True
-    word_segmentation: str = "underthesea"
     negation_window: int = 1
     remove_stopwords: bool = False
 
@@ -99,23 +90,7 @@ class PreprocessConfig:
 
 
 PREPROCESS_PROFILES: dict[str, PreprocessConfig] = {
-    "classic": PreprocessConfig(word_segmentation="none"),
-    "classic_seg": PreprocessConfig(word_segmentation="underthesea"),
-    "transformer_seg": PreprocessConfig(
-        emoji_mode="word",
-        emoticon_mode="word",
-        normalize_numbers=False,
-        remove_punctuation=False,
-        negation_window=0,
-    ),
-    "transformer_raw": PreprocessConfig(
-        emoji_mode="keep",
-        emoticon_mode="word",
-        normalize_numbers=False,
-        remove_punctuation=False,
-        word_segmentation="none",
-        negation_window=0,
-    ),
+    "classic": PreprocessConfig(),
 }
 
 # Cấu hình "tối thiểu" dùng làm mốc so sánh trong ablation.
@@ -129,7 +104,6 @@ MINIMAL_CONFIG = PreprocessConfig(
     remove_punctuation=True,
     restore_final_ng=False,
     expand_teencode=False,
-    word_segmentation="none",
     negation_window=0,
 )
 
@@ -200,18 +174,14 @@ class TextPreprocessor(BaseEstimator, TransformerMixin):
             steps.append(("numbers", nz.normalize_numbers))
         if cfg.reduce_elongation:
             steps.append(("elongation", nz.reduce_elongation))
-        # Dấu câu được *tách* ra trước (để teencode khớp "k," và để bộ tách từ thấy ranh
-        # giới câu), chỉ *xóa* sau khi tách từ và gắn phủ định – tránh ghép nhầm từ/phủ định
-        # của hai câu liền nhau.
+        # Dấu câu được *tách* ra trước (để teencode khớp "k,"), chỉ *xóa* sau khi gắn phủ
+        # định – tránh ghép nhầm từ/phủ định của hai câu liền nhau.
         steps.append(("punctuation", lambda t: nz.normalize_punctuation(t, remove=False)))
         if cfg.restore_final_ng:
             steps.append(("final_ng", nz.restore_final_ng))
         if cfg.expand_teencode:
             steps.append(("teencode", nz.TeencodeNormalizer(lex.teencode)))
         steps.append(("whitespace", nz.normalize_whitespace))
-        if cfg.word_segmentation != "none":
-            segmenter = WordSegmenter(cfg.word_segmentation)
-            steps.append(("segmentation", lambda t: nz.split_joined_placeholders(segmenter(t))))
         # Gắn phủ định phải chạy KHI DẤU CÂU CÒN LÀ TOKEN RIÊNG: dấu câu là ranh giới chặn phạm vi
         # phủ định ("... em ko ? ) . - cam thì" không được thành "ko_cam"). Chỉ sau đó mới xóa dấu.
         if cfg.negation_window > 0:
@@ -284,9 +254,8 @@ def preprocess_corpus(
 ) -> list[str]:
     """Tiền xử lý cả một tập văn bản, có cache ra đĩa.
 
-    Tách từ tiếng Việt khá chậm (~30 giây cho tập train), nên kết quả được lưu theo khóa
-    ``(cấu hình, nội dung từ điển, nội dung văn bản)``. Đổi bất kỳ thành phần nào thì
-    cache tự động bị bỏ qua.
+    Kết quả được lưu theo khóa ``(cấu hình, nội dung từ điển, nội dung văn bản)``.
+    Đổi bất kỳ thành phần nào thì cache tự động bị bỏ qua.
     """
     preprocessor = TextPreprocessor(config)
     cfg = preprocessor.config_

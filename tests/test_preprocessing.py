@@ -112,16 +112,6 @@ def test_classic_profile_end_to_end():
     assert "nhân" in tokens and "viên" in tokens  # classic giữ mức âm tiết
 
 
-def test_classic_seg_profile_segments_words():
-    tokens = TextPreprocessor("classic_seg").process("Nhân viên nhiệt tình").split()
-    assert "nhân_viên" in tokens
-
-
-def test_transformer_raw_keeps_numbers_and_k_unit():
-    out = TextPreprocessor("transformer_raw").process("tặng phiếu 250k, ok")
-    assert "250k" in out and "không" not in out
-
-
 def test_trace_lists_every_step():
     trace = TextPreprocessor("classic").trace("Máy đẹppp :))")
     assert trace["step"].iloc[0] == "input"

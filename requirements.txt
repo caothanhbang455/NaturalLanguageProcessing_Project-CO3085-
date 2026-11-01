@@ -9,15 +9,11 @@ scikit-learn>=1.5
 joblib>=1.3
 pyarrow>=14
 
-# Tách từ và xử lý tiếng Việt
+# Xử lý tiếng Việt
 underthesea>=6.8
-pyvi>=0.1.1
 
 # Biểu diễn văn bản
 gensim>=4.3                    # Word2Vec, FastText, Doc2Vec
-sentence-transformers>=3.0     # SBERT, multilingual-E5, BGE-M3, Qwen3-Embedding
-transformers>=4.51             # PhoBERT, ViSoBERT, XLM-R (Qwen3 cần >= 4.51)
-torch>=2.2
 
 # Trực quan hóa
 matplotlib>=3.8

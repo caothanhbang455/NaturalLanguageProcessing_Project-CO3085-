@@ -1,60 +1,19 @@
-"""Các bước ở mức token: tách từ, gắn phủ định, loại stopword.
+"""Các bước ở mức token: gắn phủ định và loại stopword.
 
 Tiếng Việt là ngôn ngữ đơn lập: một *từ* có thể gồm nhiều *âm tiết* cách nhau bởi
-dấu cách (``màn hình``, ``điện thoại``). Tách từ (word segmentation) nối các âm tiết
-của cùng một từ bằng ``_`` để túi-từ coi ``màn_hình`` là một đặc trưng, thay vì hai
-âm tiết rời rạc ``màn`` và ``hình`` vốn có nghĩa khác.
+dấu cách (``màn hình``, ``điện thoại``). Project giữ nguyên **mức âm tiết** và để
+n-gram (uni + bi-gram) tự bắt cụm từ, thay vì tách từ (word segmentation).
 """
 
 from __future__ import annotations
 
 from collections.abc import Collection, Sequence
 
-SEGMENTATION_BACKENDS: tuple[str, ...] = ("underthesea", "pyvi", "none")
-
 # Từ đệm có thể đứng giữa từ phủ định và từ được phủ định: "không được tốt",
 # "chẳng hề nhanh", "không bị lag". Khi gặp, phạm vi phủ định được nới thêm.
 NEGATION_FILLERS: frozenset[str] = frozenset(
     {"được", "hề", "có", "phải", "bị", "quá", "lắm", "mấy", "thể", "còn", "thấy"}
 )
-
-
-class WordSegmenter:
-    """Bộ tách từ tiếng Việt với nhiều backend.
-
-    Args:
-        backend: ``"underthesea"`` (CRF, mặc định), ``"pyvi"`` (CRF, nhanh hơn chút)
-            hoặc ``"none"`` (giữ nguyên âm tiết – dùng cho mô hình tokenizer subword).
-    """
-
-    def __init__(self, backend: str = "underthesea") -> None:
-        if backend not in SEGMENTATION_BACKENDS:
-            raise ValueError(f"backend phải thuộc {SEGMENTATION_BACKENDS}, nhận '{backend}'")
-        self.backend = backend
-        self._fn = None
-
-    def _load(self):
-        if self.backend == "underthesea":
-            from underthesea import word_tokenize
-
-            return lambda text: word_tokenize(text, format="text")
-        if self.backend == "pyvi":
-            from pyvi import ViTokenizer
-
-            return ViTokenizer.tokenize
-        return lambda text: text
-
-    def __call__(self, text: str) -> str:
-        """Tách từ một văn bản (nối âm tiết của cùng một từ bằng ``_``)."""
-        if not text.strip():
-            return ""
-        if self._fn is None:
-            self._fn = self._load()
-        return self._fn(text)
-
-    def __getstate__(self) -> dict:
-        # Hàm tách từ được nạp lại lười biếng sau khi unpickle.
-        return {"backend": self.backend, "_fn": None}
 
 
 def is_punctuation_token(token: str) -> bool:

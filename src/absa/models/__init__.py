@@ -1,1 +1,1 @@
-"""Mô hình: ``absa.models.ml`` (học máy truyền thống) và ``absa.models.dl`` (học sâu)."""
+"""Mô hình học máy truyền thống cho ABSA (``absa.models.ml``)."""
