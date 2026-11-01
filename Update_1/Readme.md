@@ -1,6 +1,6 @@
 ## UPDATE_1 
 
-'''
+```
 ├── clean_data_all_in_one.py             # File code All-in-One độc lập chạy full 11 bước
 ├── final1.md                            # Báo cáo kỹ thuật chi tiết toàn diện
 ├── cleaning-pipeline-steps-rules.md     # Tài liệu định nghĩa 11 bước và 5 RULE clean data
@@ -26,5 +26,5 @@
         ├── tokenization.py              # Xử lý gắn phủ định và ranh giới câu
         └── lexicons.py                  # Bộ nạp từ điển teencode, emoji, phủ định
 
-'''
+```
 Mọi trình bày report ghi trong final1.md
